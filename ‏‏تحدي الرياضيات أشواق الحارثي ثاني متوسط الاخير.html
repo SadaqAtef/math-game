@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تحدي متسلقة الرياضيات - أشواق الحارثي</title>
+    <style>
+        :root { 
+            --lavender: #fce4ec; /* وردي فاتح جداً */
+            --deep-purple: #880e4f; /* فوشي غامق */
+            --mauve: #f06292; /* وردي حيوي */
+            --grass-green: #4caf50; /* أخضر عشبي */
+            --success: #2ecc71; 
+            --fail: #e74c3c; 
+        }
+        
+        body { margin: 0; background: #fdf2f8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; display: flex; flex-direction: column; align-items: center; direction: rtl; }
+        
+        .header-section { text-align: center; margin: 10px 0; z-index: 20; }
+        .main-title { color: var(--deep-purple); margin: 0; font-size: 24px; text-shadow: 1px 1px 2px white; }
+        .teacher-name { color: var(--mauve); margin: 5px 0; font-size: 18px; font-weight: bold; }
+
+        #mountain-container { width: 100vw; height: 75vh; background: linear-gradient(#e1f5fe, #fdf2f8); position: relative; overflow: hidden; border-bottom: 10px solid #388e3c; }
+        
+        /* الجبل باللون الأخضر العشبي */
+        .mountain-slope { position: absolute; bottom: 0; left: 0; width: 0; height: 0; border-style: solid; border-width: 0 0 75vh 100vw; border-color: transparent transparent var(--grass-green) transparent; }
+        
+        #climber { 
+            position: absolute; 
+            bottom: 20px; 
+            left: 20px; 
+            width: 60px; 
+            transition: all 1s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 10; 
+            font-size: 50px; 
+            transform: scaleX(-1); 
+        }
+        
+        .station { position: absolute; font-size: 30px; transition: opacity 0.5s; z-index: 5; }
+        
+        #quiz-box { display: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 30px; box-shadow: 0 10px 40px rgba(240, 98, 146, 0.3); z-index: 100; text-align: center; border: 5px solid var(--mauve); width: 85%; max-width: 500px; }
+        
+        .btn { background: var(--lavender); border: 2px solid var(--mauve); padding: 12px 20px; margin: 8px; border-radius: 20px; cursor: pointer; font-size: 20px; width: 100%; transition: 0.3s; font-weight: bold; text-align: center; color: var(--deep-purple); }
+        .btn:hover { background: var(--mauve); color: white; transform: scale(1.05); }
+        
+        /* أيقونة الندم عند الخطأ */
+        #sad-feedback { 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            font-size: 100px; z-index: 200; animation: popOut 0.8s ease-out;
+        }
+
+        @keyframes popOut {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        /* اهتزاز الشاشة عند الخطأ */
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-10px, 0); }
+            20%, 40%, 60%, 80% { transform: translate(10px, 0); }
+        }
+
+        #result-screen { display: none; position: fixed; top: 20%; z-index: 101; text-align: center; background: rgba(255,255,255,0.98); padding: 40px; border-radius: 30px; border: 5px solid var(--mauve); width: 80%; max-width: 400px; }
+        
+        .score-green { color: var(--success); font-size: 35px; font-weight: bold; }
+        .score-red { color: var(--fail); font-size: 35px; font-weight: bold; }
+        
+        .confetti { position: absolute; width: 10px; height: 10px; z-index: 99; animation: fall 3s linear infinite; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
+        
+        @keyframes victory-dance { 
+            0%, 100% { transform: scaleX(-1) translateY(0); } 
+            50% { transform: scaleX(-1) translateY(-40px) scale(1.2); } 
+        }
+        .dancing { animation: victory-dance 0.5s infinite; }
+    </style>
+</head>
+<body>
+
+<div id="sad-feedback">🥺</div>
+
+<div class="header-section">
+    <h2 class="main-title">🏔️ تحدي المسائل الرياضية 🐾</h2>
+    <p class="teacher-name">إعداد المعلمة: أشواق الحارثي</p>
+</div>
+
+<div id="result-screen">
+    <div id="final-score"></div>
+    <div id="result-msg"></div>
+    <button class="btn" style="text-align:center" onclick="location.reload()">إعادة المحاولة 🔄</button>
+</div>
+
+<div id="mountain-container">
+    <div class="mountain-slope"></div>
+    <div id="climber">🧗‍♀️</div>
+</div>
+
+<div id="quiz-box">
+    <h3 id="question-text" style="color: var(--deep-purple);"></h3>
+    <div id="options"></div>
+</div>
+
+<script>
+    const data = [
+        { q: "٣س + ٥ = ٢٠", a: "٥", o: ["١٠", "١٥", "٥", "٢٠"] },
+        { q: "٢س - ٧ = ٩", a: "٨", o: ["٦", "٨", "١٠", "٤"] },
+        { q: "٤س + ١ = ١٣", a: "٣", o: ["٢", "٣", "٤", "٥"] },
+        { q: "٥س - ١٠ = ١٥", a: "٥", o: ["٣", "٧", "٥", "١٠"] },
+        { q: "٦س + ٢ = ٢٠", a: "٣", o: ["٣", "٢", "٤", "٦"] }
+    ];
+
+    let currentStep = 0;
+    let mistakes = 0;
+    const climber = document.getElementById('climber');
+    const quizBox = document.getElementById('quiz-box');
+    const sadFeedback = document.getElementById('sad-feedback');
+
+    function initGame() {
+        data.forEach((item, i) => {
+            let station = document.createElement('div');
+            station.className = 'station';
+            station.id = 'station-' + i;
+            station.style.left = (20 + (i * 18)) + "vw";
+            station.style.bottom = (10 + (i * 13)) + "vh";
+            station.innerHTML = "🌸"; // زهور بدلاً من الخيام لتناسب الطابع البناتي
+            document.getElementById('mountain-container').appendChild(station);
+        });
+        setTimeout(showQuiz, 1000);
+    }
+
+    function showQuiz() {
+        if(currentStep >= data.length) return;
+        quizBox.style.display = 'block';
+        document.getElementById('question-text').innerText = "أوجد قيمة س: " + data[currentStep].q;
+        let optionsDiv = document.getElementById('options');
+        optionsDiv.innerHTML = "";
+        
+        data[currentStep].o.forEach(choice => {
+            let btn = document.createElement('button');
+            btn.className = 'btn'; 
+            btn.innerText = choice;
+            btn.onclick = () => checkAnswer(choice);
+            optionsDiv.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(choice) {
+        if(choice === data[currentStep].a) {
+            quizBox.style.display = 'none';
+            document.getElementById('station-' + currentStep).style.opacity = "0.2";
+            currentStep++;
+            moveClimber();
+        } else {
+            mistakes++;
+            triggerMistakeEffect();
+        }
+    }
+
+    function triggerMistakeEffect() {
+        // اهتزاز الشاشة
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 500);
+        
+        // إظهار وجه نادم
+        sadFeedback.style.display = 'block';
+        setTimeout(() => sadFeedback.style.display = 'none', 800);
+    }
+
+    function moveClimber() {
+        climber.style.left = (10 + (currentStep * 18)) + "vw";
+        climber.style.bottom = (5 + (currentStep * 13)) + "vh";
+        
+        if(currentStep === data.length) {
+            setTimeout(showResults, 1000);
+        } else {
+            setTimeout(showQuiz, 1200);
+        }
+    }
+
+    function showResults() {
+        const resultScreen = document.getElementById('result-screen');
+        const finalScore = document.getElementById('final-score');
+        const resultMsg = document.getElementById('result-msg');
+        resultScreen.style.display = 'block';
+        
+        let score = data.length - mistakes;
+        if(score < 0) score = 0;
+        let percentage = (score / data.length) * 100;
+        
+        const arabicScore = score.toLocaleString('ar-EG');
+        const arabicTotal = data.length.toLocaleString('ar-EG');
+        
+        finalScore.innerText = `النتيجة النهائية: ${arabicScore} من ${arabicTotal}`;
+        
+        if(percentage >= 60) {
+            finalScore.className = "score-green";
+            resultMsg.innerText = "أبدعتِ يا بطلة! لقد وصلتِ للقمة! 👸🏆";
+            celebrate();
+            climber.classList.add('dancing');
+        } else {
+            finalScore.className = "score-red";
+            resultMsg.innerText = "محاولة جيدة، يمكنكِ تحقيق الأفضل في المرة القادمة! ✨";
+        }
+    }
+
+    function celebrate() {
+        for(let i=0; i<100; i++) {
+            let conf = document.createElement('div');
+            conf.className = 'confetti';
+            conf.style.left = Math.random() * 100 + "vw";
+            conf.style.backgroundColor = ["#f06292", "#ba68c8", "#ff80ab", "#4caf50"][Math.floor(Math.random()*4)];
+            conf.style.top = "-10px";
+            conf.style.animationDelay = Math.random() * 2 + "s";
+            document.body.appendChild(conf);
+        }
+    }
+
+    window.onload = initGame;
+</script>
+</body>
+</html>
